@@ -21,6 +21,16 @@
 
 namespace QuantLib {
 
+    /**
+     * @brief Forecasts the fixing rate for a given fixing date using the associated term structure.
+     *
+     * Calculates the forward rate between the value date and maturity date corresponding to the specified fixing date, applying the configured day count convention, compounding method, and frequency.
+     *
+     * @param fixingDate The date for which the fixing rate is to be forecasted.
+     * @return Rate The forecasted fixing rate.
+     *
+     * @throws Error if the term structure is not set.
+     */
     Rate Cdi::forecastFixing(const Date& fixingDate) const {
 
         QL_REQUIRE(!termStructure_.empty(),

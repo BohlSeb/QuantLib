@@ -99,7 +99,13 @@ namespace QuantLib {
         //! being different than intrinsic index fixing delay.
         //! Only when index fixing delay is 0 and observation shift is used,
         //! we can apply telescopic formula, when applying lookback period.
-        //@{
+        /**
+         * @brief Determines if the telescopic formula optimization can be applied to this coupon.
+         *
+         * The telescopic formula is available when lookback days and fixing days are compatible, and, for Brazilian CDI-indexed coupons, only if the gearing is effectively 1.0.
+         *
+         * @return true if the telescopic formula can be used; false otherwise.
+         */
         bool canApplyTelescopicFormula() const {
             const bool lookBackOk = (fixingDays_ == index_->fixingDays()) ||
                                     (applyObservationShift_ && index_->fixingDays() == 0);
@@ -110,7 +116,13 @@ namespace QuantLib {
         }
         //@}
 
-        //! whether the coupon is indexed to Brazilian CDI which has unique accrual formulas
+        /**
+ * @brief Indicates whether the coupon is indexed to the Brazilian CDI rate.
+ *
+ * Returns true if the coupon uses the Brazilian CDI as its underlying index, which involves unique accrual formulas.
+ *
+ * @return true if the coupon is CDI-indexed, false otherwise.
+ */
         bool isCdiIndexed() const { return isCdiIndexed_; }
 
       private:

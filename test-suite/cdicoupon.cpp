@@ -35,6 +35,14 @@ BOOST_AUTO_TEST_SUITE(CdiCouponTests)
 
 namespace CdiTestData {
 
+    /**
+     * @brief Returns the historical CDI fixing rate for a given date.
+     *
+     * The rate is piecewise constant, changing at specific dates according to a predefined schedule.
+     *
+     * @param date The date for which the CDI fixing rate is requested.
+     * @return Real The CDI fixing rate (in percentage) applicable on the given date.
+     */
     Real fixing(const Date& date) {
         if (date <= Date(2, August, 2023))
             return 13.65;
@@ -65,6 +73,15 @@ namespace CdiTestData {
         return 14.65;
     }
 
+    /**
+     * @brief Adds daily historical fixings to an overnight index over a specified date range.
+     *
+     * For each business day between the given start and end dates (inclusive), adds a fixing to the provided overnight index using a predefined rate schedule.
+     *
+     * @param first Start date for fixings (inclusive).
+     * @param last End date for fixings (inclusive).
+     * @param cal Calendar used to determine business days.
+     */
     void addFixings(const ext::shared_ptr<OvernightIndex>& index,
                     const Date& first,
                     const Date& last,
@@ -83,6 +100,14 @@ namespace CdiTestData {
     }
 
     namespace {
+        /**
+         * @brief Returns a vector of dates used as nodes for constructing a CDI zero yield curve.
+         *
+         * The returned dates include the evaluation date and a predefined schedule of future dates.
+         *
+         * @param today The evaluation date to be included as the first curve node.
+         * @return std::vector<Date> List of curve node dates for CDI curve construction.
+         */
         std::vector<Date> curveDates(const Date& today) {
             return {today,
                     Date(23, June, 2025),
@@ -105,6 +130,17 @@ namespace CdiTestData {
                     Date(1, July, 2027)};
         }
 
+        /**
+         * @brief Returns a vector of interest rates for constructing a zero yield curve, with today's rate linearly extrapolated.
+         *
+         * The first rate is computed by linear extrapolation based on the provided dates and day count convention, followed by a sequence of predefined rates.
+         *
+         * @param today The evaluation date for which the curve is constructed.
+         * @param first The first curve date after today.
+         * @param second The second curve date after today.
+         * @param dc The day count convention used for year fraction calculations.
+         * @return std::vector<Rate> A vector of rates corresponding to the curve dates.
+         */
         std::vector<Rate>
         curveRates(const Date& today, const Date& first, const Date& second, const DayCounter& dc) {
             // some randomized rates with linear extrapolation for today's rate
@@ -119,6 +155,14 @@ namespace CdiTestData {
     }
 
 
+    /**
+     * @brief Constructs an interpolated zero yield curve for the Brazilian CDI market.
+     *
+     * Creates and returns a shared pointer to a zero curve using predefined dates and rates, with linear interpolation and annual compounding, based on the Business252 day count convention.
+     *
+     * @param today The evaluation date for the curve.
+     * @return Shared pointer to the constructed zero yield curve.
+     */
     ext::shared_ptr<ZeroCurve> makeCurve(const Date& today) {
         const auto dc = Business252();
         const auto dates = curveDates(today);
@@ -140,17 +184,38 @@ struct CommonVars {
     ext::shared_ptr<Cdi> cdi;
     RelinkableHandle<YieldTermStructure> forecastCurve;
 
+    /**
+     * @brief Creates a CDI-indexed overnight indexed coupon for the specified period.
+     *
+     * Constructs an `OvernightIndexedCoupon` using the CDI index, notional, and optional gearing and spread for the given start and end dates.
+     *
+     * @param startDate The start date of the coupon period.
+     * @param endDate The end date of the coupon period.
+     * @param gearing Optional gearing factor applied to the coupon rate (default is 1.0).
+     * @param spread Optional spread added to the coupon rate (default is 0.0).
+     * @return Shared pointer to the created `OvernightIndexedCoupon`.
+     */
     ext::shared_ptr<OvernightIndexedCoupon>
     makeCoupon(Date startDate, Date endDate, Real gearing = 1.0, Real spread = 0.0) {
         return ext::make_shared<OvernightIndexedCoupon>(endDate, notional, startDate, endDate, cdi,
                                                         gearing, spread);
     }
 
+    /**
+     * @brief Adds historical CDI fixings to the CDI index from the start date up to the last available fixing date.
+     *
+     * The last fixing date is determined as the most recent business day on or before the evaluation date.
+     */
     void initializeFixings() const {
         Date lastFixingDate = calendar.adjust(today, Preceding);
         CdiTestData::addFixings(cdi, start, lastFixingDate, calendar);
     }
 
+    /**
+     * @brief Initializes common test variables for CDI coupon tests.
+     *
+     * Sets the global evaluation date and creates a CDI index linked to the forecast curve handle.
+     */
     CommonVars() {
         Settings::instance().evaluationDate() = today;
         cdi = ext::make_shared<Cdi>(forecastCurve);
@@ -166,6 +231,11 @@ struct CommonVars {
                     << std::fabs(calculated - expected));                          \
     }
 
+/**
+ * @brief Tests the calculation of coupon amounts and accrued amounts for CDI-indexed overnight coupons fully in the past.
+ *
+ * Creates three coupons with different gearings and spreads, and verifies that their amounts and accrued amounts match expected values derived from manual calculations. Ensures correct handling of historical fixings for past coupon periods.
+ */
 BOOST_AUTO_TEST_CASE(testPastCoupon) {
     BOOST_TEST_MESSAGE("Testing rate for cdi-indexed coupon in the past...");
 
@@ -195,6 +265,11 @@ BOOST_AUTO_TEST_CASE(testPastCoupon) {
                                 1e-5);
 }
 
+/****
+ * @brief Tests calculation of accrued amount, coupon rate, and coupon amount for a CDI-indexed overnight coupon spanning both past and future periods.
+ *
+ * This test verifies that the `OvernightIndexedCoupon` correctly computes accrued amounts, rates, and total amounts when the coupon period starts in the past and ends in the future, using historical fixings for the past portion and a forecast curve for the future. The results are compared against manually calculated expected values for different gearings and spreads.
+ */
 BOOST_AUTO_TEST_CASE(testCurrentCoupon) {
     BOOST_TEST_MESSAGE("Testing rate for cdi-indexed coupon...");
 
@@ -238,6 +313,11 @@ BOOST_AUTO_TEST_CASE(testCurrentCoupon) {
     CHECK_CDI_OIS_COUPON_RESULT("coupon amount", coupon3->amount(), expAmount3, 1e-5);
 }
 
+/**
+ * @brief Tests the rate and amount calculation for a future CDI-indexed overnight coupon using a flat forecast curve.
+ *
+ * Verifies that the coupon's rate and amount match manually calculated expected values when no historical fixings are available and the forecast curve is flat at 15%.
+ */
 BOOST_AUTO_TEST_CASE(testFutureCouponRate) {
     BOOST_TEST_MESSAGE("Testing rate for future overnight-indexed coupon...");
 

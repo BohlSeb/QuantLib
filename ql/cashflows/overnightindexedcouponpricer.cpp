@@ -28,6 +28,16 @@ namespace QuantLib {
 
     namespace {
 
+        /**
+         * @brief Determines the number of fixing dates up to a specified date.
+         *
+         * Calculates how many fixing dates are relevant up to (but not including) the given date, based on a vector of interest dates. If observation shift is applied and the date is beyond the last interest date, returns one less than the total number of interest dates.
+         *
+         * @param interestDates Vector of interest dates defining the accrual periods.
+         * @param date The date up to which fixings are counted.
+         * @param applyObservationShift Whether to apply the observation shift adjustment.
+         * @return Size Number of fixing dates up to the specified date.
+         */
         Size determineNumberOfFixings(const std::vector<Date>& interestDates,
                                       const Date& date,
                                       bool applyObservationShift) {
@@ -51,6 +61,14 @@ namespace QuantLib {
         return averageRate(coupon_->accrualEndDate());
     }
 
+    /**
+     * @brief Calculates the compounded overnight rate up to a specified date for the coupon.
+     *
+     * Computes the compounded rate for an overnight indexed coupon up to the given date, taking into account past fixings, today's fixing (if available), and forecasting future fixings using the index's forwarding curve. Handles special cases such as lookback, lockout, and CDI-indexed coupons, applying the appropriate compounding method and telescopic formula where applicable. The result is annualized over the accrued period and adjusted for gearing and spread.
+     *
+     * @param date The end date up to which the compounded rate is calculated.
+     * @return Rate The compounded overnight rate annualized over the accrued period.
+     */
     Rate CompoundingOvernightIndexedCouponPricer::averageRate(const Date& date) const {
         const Date today = Settings::instance().evaluationDate();
 
@@ -181,6 +199,11 @@ namespace QuantLib {
         return (compoundFactor - 1.0) / accruedPeriod;
     }
 
+    /**
+     * @brief Initializes the pricer with an overnight indexed coupon.
+     *
+     * Casts and stores the provided floating rate coupon as an OvernightIndexedCoupon. Throws an error if the coupon is not of the expected type.
+     */
     void
     ArithmeticAveragedOvernightIndexedCouponPricer::initialize(const FloatingRateCoupon& coupon) {
         coupon_ = dynamic_cast<const OvernightIndexedCoupon*>(&coupon);

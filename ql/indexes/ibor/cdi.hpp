@@ -43,6 +43,13 @@ namespace QuantLib {
      */
     class Cdi : public OvernightIndex {
       public:
+        /**
+         * @brief Constructs a Brazilian CDI Overnight index.
+         *
+         * Initializes the CDI index with standard conventions: zero fixing days, Brazilian Real currency, Brazil calendar, 252-business-day count, and an optional yield term structure.
+         *
+         * @param h Optional handle to the yield term structure used for forecasting fixings.
+         */
         explicit Cdi(const Handle<YieldTermStructure>& h = {})
         : OvernightIndex("CDI", 0, BRLCurrency(), Brazil(), Business252(), h) {}
 

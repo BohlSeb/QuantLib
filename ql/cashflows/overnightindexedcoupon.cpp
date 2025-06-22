@@ -42,6 +42,27 @@ namespace QuantLib {
         }
     }
 
+    /**
+     * @brief Constructs an overnight indexed coupon with support for lookback, lockout, telescopic value dates, and averaging methods.
+     *
+     * Initializes an overnight indexed coupon, configuring value and fixing dates, accrual periods, and pricer selection based on the provided parameters. Supports lookback and lockout periods, telescopic value dates for optimized schedule construction, and both simple and compound averaging methods. Enforces restrictions for CDI-indexed coupons (compound averaging only) and validates parameter combinations. The coupon is priced using an appropriate pricer according to the averaging method and coupon configuration.
+     *
+     * @param paymentDate The date when the coupon is paid.
+     * @param nominal The notional amount for the coupon.
+     * @param startDate The start date of the accrual period.
+     * @param endDate The end date of the accrual period.
+     * @param overnightIndex The overnight index used for rate fixings.
+     * @param gearing The gearing factor applied to the index rate.
+     * @param spread The spread added to the index rate.
+     * @param refPeriodStart The reference period start date for accrual calculation.
+     * @param refPeriodEnd The reference period end date for accrual calculation.
+     * @param dayCounter The day count convention for accrual calculation.
+     * @param telescopicValueDates If true, uses an optimized schedule for value dates.
+     * @param averagingMethod The averaging method (simple or compound) for rate calculation.
+     * @param lookbackDays Number of days to look back for rate fixings.
+     * @param lockoutDays Number of days at the end of the period for which the fixing is frozen.
+     * @param applyObservationShift If true, applies observation shift to fixing dates.
+     */
     OvernightIndexedCoupon::OvernightIndexedCoupon(
         const Date& paymentDate,
         Real nominal,
